@@ -348,11 +348,11 @@ function largo_top_term( $options = array() ) {
 	// Try to get the taxonomy for the term ID, but if it's 'none' for the "None" option, don't bother doing this.
 	if ( !empty( $term_id ) && $term_id !== 'none' ) {
 		//get the taxonomy slug
-		$taxonomy = $wpdb->get_var( $wpdb->prepare( "SELECT taxonomy FROM $wpdb->term_taxonomy WHERE term_id = %d LIMIT 1", $term_id) );
+		$taxonomy_name = $wpdb->get_var( $wpdb->prepare( "SELECT taxonomy FROM $wpdb->term_taxonomy WHERE term_id = %d LIMIT 1", $term_id) );
 	}
 
 	// if no top_term specified, or if the top term is not in a taxonomy and the top term is not 'none',
-	if ( empty( $term_id ) || ( empty( $taxonomy ) && $term_id !== 'none' ) ) {
+	if ( empty( $term_id ) || ( empty( $taxonomy_name ) && $term_id !== 'none' ) ) {
 		// Get the categories the post is in and try to use the first one as a term id
 		$term_id = get_the_category( $args['post'] );
 		if ( is_array( $term_id ) &&  count( $term_id ) ) {
@@ -371,13 +371,18 @@ function largo_top_term( $options = array() ) {
 	/*
 	 * Using the term ID, get the term and then generate some text
 	 */
-	if ( $term_id && $term_id !== 'none' && !empty( $taxonomy ) ) {
+	if ( $term_id && $term_id !== 'none' && !empty( $taxonomy_name ) ) {
+		// get the term object
+		$term = get_term( $term_id, $taxonomy_name );
+
+		// get the taxonomy object & labels
+		$taxonomy = get_taxonomy( $term->taxonomy );
+		$taxonomy_labels = get_taxonomy_labels( $taxonomy );
+
 		$icon = ( $args['use_icon'] ) ?  '<i class="icon-white icon-tag"></i>' : '' ;	//this will probably change to a callback largo_term_icon() someday
 
-		$link = ( $args['link'] ) ? array( '<a href="%2$s" title="Read %3$s in the %4$s category">','</a>' ) : array( '', '' ) ;
+		$link = ( $args['link'] ) ? array( '<a href="%2$s" title="Read %3$s in the %4$s %7$s">','</a>' ) : array( '', '' ) ;
 
-		// get the term object
-		$term = get_term( $term_id, $taxonomy );
 
 		if ( is_wp_error( $term ) ) return;
 
@@ -392,7 +397,8 @@ function largo_top_term( $options = array() ) {
 				'%1$s-%2$s',
 				$term->taxonomy,
 				$term->slug
-			)
+			),
+			$taxonomy_labels->singular_name
 		);
 	}
 
